@@ -111,7 +111,8 @@ setInterval(() => {
 
         // Condition pour l'alerte 3 minutes (180 secondes)
         if (remaining > 0 && remaining <= 180 && !state.threeMinWarningSent) {
-            sendNtfyNotification(`Le bouton du Timer ${timerId} a été cliqué !`, "Alerte 3mn");
+            const message = `Timer ${id}: Moins de 3 minutes restantes ! (${Math.floor(remaining/60)}m${remaining%60}s)`;
+            sendNtfyNotification(message, "Alerte 3 Min");
             state.threeMinWarningSent = true; // Marquer comme envoyé pour ce cycle
         }
 
