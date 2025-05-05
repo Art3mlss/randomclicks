@@ -1,40 +1,56 @@
-// server.js (MODIFIÉ pour plusieurs compteurs)
+// server.js (CORRIGÉ et COMPLET)
+
+// --- Imports ---
 const express = require('express');
 const cors = require('cors');
+const fetch = require('node-fetch'); // <-- Ajout de l'import nécessaire
+
+// --- Initialisation Express ---
 const app = express();
 const port = process.env.PORT || 3000;
 
 // --- Configuration ntfy.sh ---
-const NTFY_TOPIC = 'agggggggressif'; // !!! REMPLACEZ PAR VOTRE TOPIC SECRET !!!
-const NTFY_URL = `https://ntfy.sh/${NTFY_TOPIC}`;
+const NTFY_GLOBAL_TOPIC = 'agggggggressif'; // <-- Utilisation d'un nom cohérent
+const NTFY_BASE_URL = 'https://ntfy.sh/';   // <-- Définition de la base URL manquante
+// ------------------------------
 
+// --- Mapping des IDs de Timer vers leurs Topics Spécifiques ---
+// (Ceci est votre configuration actuelle, adaptez si besoin)
 const timerSpecificTopics = {
-    // 'timerId': ['topic_specifique_1', 'topic_specifique_2', ...]
     'soler': ['agggggggressif_soler'],
     'lefilsduforgeron': ['agggggggressif_manny'],
-    // Les IDs non listés ici n'enverront qu'au topic global.
+    '69': ['agggggggressif_1', 'agggggggressif_2', 'agggggggressif_3'] // Assurez-vous que ces topics sont ceux que vous voulez pour '69'
 };
+// ------------------------------------------------------------
 
-const knownTimerIds = ['soler', 'lefilsduforgeron', '69']; // Les identifiants des compteurs que nous gérons
+// --- Liste des Timers Connus (Source de vérité) ---
+// (Ceci est votre configuration actuelle, adaptez si besoin)
+const knownTimerIds = ['soler', 'lefilsduforgeron', '69'];
+// ----------------------------------------------------
 
-// --- Fonction pour obtenir une durée aléatoire en secondes (INCHANGÉE) ---
+// --- Stockage de l'état des timers ---
+const timerStates = {
+    // Structure: 'timerId': { endTime: timestamp, currentDuration: seconds, threeMinWarningSent: boolean }
+};
+// -------------------------------------
+
+// --- Fonction Utilitaires ---
+
+/** Retourne une durée aléatoire en secondes */
 function getRandomDurationInSeconds() {
-    const minSeconds = 185 ; // 1158 (19 * 60) + 18
-    const maxSeconds = 200 ; // 2385 (39 * 60) + 45
+    // (Vos valeurs actuelles, plage très courte de ~3min)
+    const minSeconds = 185 ;
+    const maxSeconds = 200 ;
     return Math.floor(Math.random() * (maxSeconds - minSeconds + 1)) + minSeconds;
 }
 
-const timerStates = {
-    // 'timerId': { endTime: timestamp, currentDuration: seconds, threeMinWarningSent: boolean }
-};
-
-
-// --- Fonction pour envoyer une notification --- (NOUVEAU)
+/** Envoie une requête HTTP POST à un topic ntfy.sh */
 async function sendHttpRequestToNtfy(topic, message, title = "Alerte Timer") {
-    const fullNtfyUrl = `${NTFY_BASE_URL}${topic}`;
+    const fullNtfyUrl = `${NTFY_BASE_URL}${topic}`; // Utilise la base URL définie
     console.log(`Sending ntfy to ${topic}: ${message}`);
     try {
-        await fetch(fullNtfyUrl, { // Utilise l'URL complète avec le topic
+        // Utilise le 'fetch' importé en haut du fichier
+        await fetch(fullNtfyUrl, {
             method: 'POST',
             body: message,
             headers: { 'Title': title }
@@ -44,24 +60,22 @@ async function sendHttpRequestToNtfy(topic, message, title = "Alerte Timer") {
     }
 }
 
-// --- NOUVEAU : Fonction pour gérer l'envoi multi-topics ---
+/** Gère l'envoi des notifications vers le topic global et les topics spécifiques */
 async function sendNotificationsForTimer(timerId, message, title) {
-    // 1. Envoyer TOUJOURS au topic global
-    await sendHttpRequestToNtfy(NTFY_GLOBAL_TOPIC, message, title);
+    // 1. Envoyer toujours au topic global
+    await sendHttpRequestToNtfy(NTFY_GLOBAL_TOPIC, message, title); // Utilise la variable globale cohérente
 
-    // 2. Vérifier s'il y a des topics spécifiques pour cet ID
+    // 2. Vérifier et envoyer aux topics spécifiques pour cet ID
     const specificTopics = timerSpecificTopics[timerId];
     if (specificTopics && specificTopics.length > 0) {
         console.log(`Timer ${timerId} also notifying specific topics: ${specificTopics.join(', ')}`);
-        // Envoyer à chaque topic spécifique trouvé dans le mapping
-        // On peut utiliser Promise.all pour les envoyer en parallèle (optionnel)
         await Promise.all(
             specificTopics.map(topic => sendHttpRequestToNtfy(topic, message, title))
         );
     }
 }
 
-// --- Initialisation des états au démarrage (NOUVEAU) ---
+/** Initialise l'état de tous les timers connus au démarrage */
 function initializeTimers() {
     const now = Math.floor(Date.now() / 1000);
     knownTimerIds.forEach(id => {
@@ -69,21 +83,29 @@ function initializeTimers() {
         timerStates[id] = {
             currentDuration: duration,
             endTime: now + duration,
-            threeMinWarningSent: false
+            threeMinWarningSent: false // Initialiser le flag ici
         };
         console.log(`Initialized timer '${id}'. Duration: ${Math.floor(duration / 60)}m ${duration % 60}s. EndTime: ${new Date(timerStates[id].endTime * 1000)}`);
     });
 }
-initializeTimers(); // Appeler l'initialisation
-// ------------------------------------------------------
+// --------------------------
 
+// --- Middleware ---
 app.use(cors());
+// ------------------
 
-// --- Route pour obtenir l'heure de fin (MODIFIÉE) ---
+// --- Initialisation des Timers au Démarrage ---
+initializeTimers();
+// --------------------------------------------
+
+// --- Routes API ---
+
+// Obtenir l'heure de fin pour un timer spécifique
 app.get('/time/:timerId', (req, res) => {
     const timerId = req.params.timerId;
     console.log(`GET /time/${timerId} request received.`);
 
+    // Vérifier si l'ID est connu (bonne pratique)
     if (timerStates[timerId]) {
         res.json({ endTime: timerStates[timerId].endTime });
     } else {
@@ -92,27 +114,27 @@ app.get('/time/:timerId', (req, res) => {
     }
 });
 
-// --- Route pour demander une réinitialisation (MODIFIÉE) ---
-app.post('/reset/:timerId', (req, res) => {
+// Réinitialiser un timer spécifique
+app.post('/reset/:timerId', async (req, res) => { // async est nécessaire pour await dans sendNotificationsForTimer
     const timerId = req.params.timerId;
     const now = Math.floor(Date.now() / 1000);
     console.log(`POST /reset/${timerId} request received. Current time: ${now}`);
 
+    // Vérifier si l'ID est connu
     if (timerStates[timerId]) {
-        // On fait confiance au client pour le moment où le reset est possible
         const newDuration = getRandomDurationInSeconds();
         timerStates[timerId].currentDuration = newDuration;
         timerStates[timerId].endTime = now + newDuration;
-        timerStates[timerId].threeMinWarningSent = false
+        timerStates[timerId].threeMinWarningSent = false; // Réinitialiser le flag important !
 
         console.log(`Timer '${timerId}' reset successful. New duration: ${Math.floor(newDuration / 60)}m ${newDuration % 60}s. New endTime: ${timerStates[timerId].endTime} (${new Date(timerStates[timerId].endTime * 1000)})`);
 
-        // Envoyer la notification ntfy pour le clic ! (Appel ASYNCHRONE)
+        // Envoyer la notification pour le clic (utilise la fonction de routage)
         sendNotificationsForTimer(
             timerId,
             `Le bouton du Timer ${timerId} a été cliqué !`,
             "Clic Bouton"
-        );
+        ); // Pas besoin d'await ici si on ne veut pas attendre la fin de l'envoi
 
         res.json({ success: true, newEndTime: timerStates[timerId].endTime });
 
@@ -122,43 +144,40 @@ app.post('/reset/:timerId', (req, res) => {
     }
 });
 
-// --- Vérification périodique pour l'alerte 3 minutes (NOUVEAU et COMPLEXE) ---
-// ATTENTION: Ceci ajoute de la charge au serveur et de la complexité.
-// Vous pouvez commenter/supprimer ce bloc si vous ne voulez que la notif au clic.
+// ------------------
+
+// --- Tâche de Fond : Vérification Alerte 3 Minutes ---
 setInterval(() => {
     const now = Math.floor(Date.now() / 1000);
-    Object.keys(timerStates).forEach(id => {
+    Object.keys(timerStates).forEach(id => { // Itère sur les clés de l'état actuel
         const state = timerStates[id];
-        if (!state) return; // Sécurité
+        if (!state) return; // Sécurité si un état était supprimé
 
         const remaining = state.endTime - now;
 
         // Condition pour l'alerte 3 minutes (180 secondes)
         if (remaining > 0 && remaining <= 180 && !state.threeMinWarningSent) {
             const minutes = Math.floor(remaining/60);
-            const seconds = remaining%60;
+            const seconds = remaining % 60; // Modulo pour les secondes restantes
             const message = `Timer ${id}: Moins de 3 minutes restantes ! (${minutes}m${seconds}s)`;
             console.log("Generated 3min message:", message);
 
-            // APPEL MODIFIÉ : Utiliser la nouvelle fonction
+            // Envoyer la notification (utilise la fonction de routage)
             sendNotificationsForTimer(id, message, "Alerte 3 Min");
+
             state.threeMinWarningSent = true; // Marquer comme envoyé pour ce cycle
         }
 
-        // Optionnel: Réinitialiser le flag si le temps est écoulé mais pas encore reset
-        // (pour éviter des notifications manquées si le serveur redémarre juste avant 3min)
-        if (remaining <= 0 && state.threeMinWarningSent) {
-            //   Note: Ce reset pourrait causer une nouvelle notif si le serveur redémarre
-            //   et que le temps est toujours < 3min après redémarrage.
-            //   Pour être parfait, il faudrait stocker l'état de manière persistante.
-            //   Pour l'instant, on le laisse comme ça. Ou on ne reset le flag QUE dans /reset.
-            //   state.threeMinWarningSent = false;
-        }
+        // Optionnel: Réinitialiser le flag si expiré (peut être géré uniquement au reset pour plus de simplicité)
+        // if (remaining <= 0 && state.threeMinWarningSent) {
+        //     state.threeMinWarningSent = false;
+        // }
     });
-}, 15 * 1000); // Vérifier toutes les 15 secondes (ajuster si besoin)
-// -----------------------------------------------------------------------
+}, 15 * 1000); // Vérifier toutes les 15 secondes
+// ----------------------------------------------------
 
+// --- Démarrage du Serveur ---
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
-    // L'initialisation affiche déjà les détails des timers
 });
+// ----------------------------
