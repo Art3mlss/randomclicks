@@ -6,7 +6,7 @@ const port = process.env.PORT || 3000; // Le port d'écoute
 
 // --- La variable clé : l'heure de fin du compteur (en secondes depuis 1970) ---
 // Initialisation : 30 minutes à partir du moment où le serveur démarre
-let endTime = Math.floor(Date.now() / 1000) + (30 * 60);
+let endTime = Math.floor(Date.now() / 1000) + (1 * 60);
 // ---------------------------------------------------------------------------
 
 app.use(cors()); // Activer CORS pour toutes les origines (à restreindre si besoin)
@@ -23,7 +23,7 @@ app.post('/reset', (req, res) => {
     console.log(`POST /reset request received. Current time: ${now}, End time: ${endTime}`);
     // On ne reset que si le temps est effectivement écoulé
     if (now >= endTime) {
-        endTime = now + (30 * 60); // Nouvelle heure de fin : maintenant + 30 minutes
+        endTime = now + (1 * 60); // Nouvelle heure de fin : maintenant + 30 minutes
         console.log(`Timer reset successful. New endTime: <span class="math-inline">\{endTime\} \(</span>{new Date(endTime * 1000)})`);
         res.json({ success: true, newEndTime: endTime });
     } else {

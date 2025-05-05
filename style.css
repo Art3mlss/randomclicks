@@ -1,12 +1,64 @@
-#resetButton.active {
-    background-color: green;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    cursor: pointer;
+/* style.css (version améliorée) */
+
+body {
+    background-color: #1e1e1e; /* Fond très sombre */
+    color: #f0f0f0; /* Texte principal clair */
+    font-family: Arial, sans-serif; /* Police simple et lisible */
+    margin: 0; /* Enlève les marges par défaut du navigateur */
+    padding: 20px; /* Un peu d'espace sur les bords */
+
+    /* Utilisation de Flexbox pour centrer le contenu facilement */
+    display: flex;
+    flex-direction: column; /* Éléments les uns sous les autres */
+    align-items: center; /* Centrage horizontal */
+    justify-content: center; /* Centrage vertical */
+    min-height: 95vh; /* Assure que le body prend au moins la hauteur de l'écran */
+    text-align: center; /* Centre aussi le texte DANS les éléments enfants */
+}
+
+h1 {
+    color: #e0e0e0; /* Titre légèrement moins blanc que le texte */
+    margin-bottom: 30px; /* Espace sous le titre */
 }
 
 #timer {
-    font-size: 2em;
-    margin-bottom: 20px;
+    font-size: 4em; /* Taille du compteur augmentée */
+    font-weight: bold; /* Texte en gras */
+    margin-bottom: 30px; /* Espace sous le compteur */
+    color: #61dafb; /* Couleur un peu "tech" pour le compteur (bleu clair) */
+    /* Le centrage est géré par le body (align-items) */
+}
+
+#resetButton {
+    /* Style de base quand caché ou inactif (sera rendu visible par JS) */
+    background-color: #444; /* Bouton gris foncé */
+    color: #ccc; /* Texte du bouton gris clair */
+    border: 1px solid #666;
+    padding: 15px 30px; /* Bouton plus grand */
+    font-size: 1.1em;
+    border-radius: 5px; /* Coins arrondis */
+    cursor: pointer;
+    display: none; /* Caché par défaut, JS le montre */
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease; /* Effet de transition doux */
+}
+
+#resetButton.active {
+    /* Style quand le bouton est actif (vert) */
+    background-color: #28a745; /* Vert vif */
+    border-color: #1e7e34;
+    color: white; /* Texte blanc */
+}
+
+/* Effet au survol */
+#resetButton:hover {
+    background-color: #555; /* Légèrement plus clair au survol (si inactif) */
+}
+
+#resetButton.active:hover {
+    background-color: #218838; /* Vert un peu plus foncé au survol (si actif) */
+}
+
+/* Petit effet au clic */
+#resetButton:active {
+    transform: scale(0.98); /* Réduit légèrement la taille au clic */
 }
