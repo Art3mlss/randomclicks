@@ -12,8 +12,8 @@ const knownTimerIds = ['soler', 'lefilsduforgeron', '69']; // Les identifiants d
 
 // --- Fonction pour obtenir une durée aléatoire en secondes (INCHANGÉE) ---
 function getRandomDurationInSeconds() {
-    const minSeconds = 20 ; // 1158 (19 * 60) + 18
-    const maxSeconds = 30 ; // 2385 (39 * 60) + 45
+    const minSeconds = (19 * 60) + 18; // 1158
+    const maxSeconds = (39 * 60) + 45 ; // 2385
     return Math.floor(Math.random() * (maxSeconds - minSeconds + 1)) + minSeconds;
 }
 
