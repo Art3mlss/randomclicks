@@ -19,6 +19,7 @@ const timerStates = {
     // 'timerId': { endTime: timestamp, currentDuration: seconds, threeMinWarningSent: boolean }
 };
 
+
 // --- Fonction pour envoyer une notification --- (NOUVEAU)
 async function sendNtfyNotification(message, title = "Alerte Timer") {
     console.log(`Sending ntfy notification: ${message}`);
