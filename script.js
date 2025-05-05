@@ -158,9 +158,7 @@ function updateLocalTimerDisplay() {
             if (!intervalId) { // Relancer l'intervalle s'il s'était arrêté
                 intervalId = setInterval(updateLocalTimerDisplay, 1000);
             }
-            if (remainingSeconds < -5) {
-                startMovingButton();
-            }
+            startMovingButton();
             startOvertimeCheck();
             console.log(`Timer ${timerId}: Overtime started.`);
         }
