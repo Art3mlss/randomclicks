@@ -1,13 +1,12 @@
-// script.js (Nettoyé et Corrigé pour état précédent)
+// script.js (Avec mouvement fluide réintégré)
 
 // --- Récupération des éléments du DOM ---
 const timerDisplay = document.getElementById('timer');
 const resetButton = document.getElementById('resetButton');
 const messageDisplay = document.getElementById('message');
-const audioPlayer = document.getElementById('background-audio'); // Pour la musique
+const audioPlayer = document.getElementById('background-audio');
 
 // --- Configuration Backend ---
-// !!! VÉRIFIEZ CETTE URL !!!
 const backendUrl = 'https://randomclicks.onrender.com'; // Votre URL Render backend
 
 // --- Liste des IDs Valides (Doit correspondre à knownTimerIds dans server.js) ---
@@ -23,10 +22,10 @@ let overtimeStart = 0;
 let overtimeCheckIntervalId = null; // Pour check > 30s overtime
 
 // --- Variables pour l'Animation du Bouton ---
-let animationFrameId = null;
-let buttonX, buttonY;
-let buttonVX, buttonVY;
-const buttonSpeed = 8;
+let animationFrameId = null;  // ID pour requestAnimationFrame
+let buttonX, buttonY;         // Position X, Y du bouton
+let buttonVX, buttonVY;         // Vitesse X, Y du bouton
+const buttonSpeed = 8;        // Vitesse de déplacement du bouton
 
 // --- Variable pour la Musique ---
 let musicCanPlay = false;
@@ -55,7 +54,7 @@ function startMovingButton() {
     if (Math.abs(buttonVX) < 1) buttonVX = Math.sign(buttonVX || 1) * buttonSpeed * 0.7;
     if (Math.abs(buttonVY) < 1) buttonVY = Math.sign(buttonVY || 1) * buttonSpeed * 0.7;
     console.log(`Timer ${timerId}: Starting smooth move...`);
-    updateButtonPosition(); // Lance la boucle une fois
+    updateButtonPosition(); // Lance la boucle
 }
 
 function stopMovingButton() {
@@ -63,16 +62,19 @@ function stopMovingButton() {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
         console.log(`Timer ${timerId}: Stopping smooth move.`);
+        // Optionnel: Réinitialiser la position si nécessaire
+        // resetButton.style.left = '';
+        // resetButton.style.top = '';
+        // resetButton.style.transform = '';
     }
 }
 
-// Boucle d'animation pour le bouton (appelée par startMovingButton)
+// Boucle d'animation récursive
 function updateButtonPosition() {
-    if (!animationFrameId) return; // Sécurité si stop a été appelé entre-temps
+    if (!animationFrameId && animationFrameId !== 0) return; // Arrêté entre-temps
     const button = resetButton;
     const viewWidth = window.innerWidth;
     const viewHeight = window.innerHeight;
-    // Lire les dimensions à chaque frame peut être lourd, mais plus sûr si elles changent
     const btnWidth = button.offsetWidth;
     const btnHeight = button.offsetHeight;
 
@@ -115,22 +117,17 @@ function stopOvertimeCheck() {
 
 // --- Mise à jour Principale de l'Affichage ---
 function updateLocalTimerDisplay() {
-    if (!timerId) return; // Ne rien faire si l'ID n'est pas valide
-
+    if (!timerId) return;
     const now = Math.floor(Date.now() / 1000);
-    // Assurer que targetEndTime est un nombre avant de calculer
     const currentTargetEndTime = Number(targetEndTime) || 0;
     const remainingSeconds = currentTargetEndTime - now;
-
-    // Log pour débogage
-    // console.log(`Tick: ID=${timerId}, EndTime=${currentTargetEndTime}, Now=${now}, Remaining=${remainingSeconds}, Overtime=${isOvertime}`);
 
     if (remainingSeconds <= 0) {
         // Mode Overtime
         if (!isOvertime) {
             isOvertime = true;
-            overtimeStart = currentTargetEndTime; // Le moment où ça a fini
-            startMovingButton();
+            overtimeStart = currentTargetEndTime;
+            startMovingButton(); // <<-- Démarrer le mouvement ici
             startOvertimeCheck();
             console.log(`Timer ${timerId}: Overtime started.`);
         }
@@ -142,22 +139,21 @@ function updateLocalTimerDisplay() {
         // Mode Compte à rebours
         if (isOvertime) {
             isOvertime = false;
-            stopMovingButton();
+            stopMovingButton(); // <<-- Arrêter le mouvement ici
             stopOvertimeCheck();
             console.log(`Timer ${timerId}: Countdown resumed.`);
         }
         timerDisplay.textContent = formatTime(remainingSeconds);
         resetButton.style.display = 'none';
         resetButton.classList.remove('active');
-        // S'assurer que les effets sont arrêtés
-        stopMovingButton();
-        stopOvertimeCheck();
+        stopMovingButton(); // Sécurité
+        stopOvertimeCheck(); // Sécurité
     }
 }
 
 // --- Communication avec le Backend ---
 async function fetchTimeFromServer() {
-    if (!timerId) return; // Vérification supplémentaire
+    if (!timerId) return;
     console.log(`Timer ${timerId}: Fetching time...`);
     try {
         const response = await fetch(`${backendUrl}/time/${timerId}`);
@@ -168,7 +164,7 @@ async function fetchTimeFromServer() {
                 if(messageDisplay) messageDisplay.textContent = `Error: Timer '${timerId}' unknown.`;
                 if(timerDisplay) timerDisplay.textContent = "N/A";
                 if (intervalId) clearInterval(intervalId); intervalId = null;
-                if (pollingIntervalId) clearInterval(pollingIntervalId); pollingIntervalId = null; // Arrêter aussi le polling
+                if (pollingIntervalId) clearInterval(pollingIntervalId); pollingIntervalId = null;
                 stopMovingButton(); stopOvertimeCheck();
                 return;
             }
@@ -177,7 +173,6 @@ async function fetchTimeFromServer() {
         const data = await response.json();
         console.log(`Timer ${timerId}: Received data:`, data);
 
-        // Validation plus stricte de endTime
         if (typeof data.endTime === 'number' && data.endTime > 0) {
             if (data.endTime !== targetEndTime) {
                 console.log(`Timer ${timerId}: Updating targetEndTime from ${targetEndTime} to ${data.endTime}`);
@@ -185,33 +180,32 @@ async function fetchTimeFromServer() {
                 const now = Math.floor(Date.now() / 1000);
                 if (isOvertime && targetEndTime > now) {
                     console.log(`Timer ${timerId}: Exiting overtime due to server update.`);
-                    isOvertime = false; // Repasser en mode compte à rebours
-                    stopMovingButton();
+                    isOvertime = false;
+                    stopMovingButton(); // <<-- Arrêter mouvement si serveur update pendant overtime
                     stopOvertimeCheck();
                 }
-                updateLocalTimerDisplay(); // Mettre à jour immédiatement
+                updateLocalTimerDisplay();
             }
         } else {
             console.error(`Timer ${timerId}: Invalid endTime received:`, data.endTime);
             if(timerDisplay) timerDisplay.textContent = "Data invalide";
-            targetEndTime = 0; // Reset pour éviter NaN
-            updateLocalTimerDisplay(); // Mettre à jour avec l'erreur/0
+            targetEndTime = 0;
+            updateLocalTimerDisplay();
         }
-
     } catch (error) {
         console.error(`Timer ${timerId}: Failed to fetch time:`, error);
         if(timerDisplay) timerDisplay.textContent = "Error";
         if (intervalId) clearInterval(intervalId); intervalId = null;
-        if (pollingIntervalId) clearInterval(pollingIntervalId); pollingIntervalId = null; // Arrêter aussi le polling
+        if (pollingIntervalId) clearInterval(pollingIntervalId); pollingIntervalId = null;
         stopMovingButton(); stopOvertimeCheck();
     }
 }
 
-// --- Gestion du clic Reset (UNE SEULE FOIS) ---
+// --- Gestion du clic Reset ---
 resetButton.addEventListener('click', async () => {
     if (!timerId) return;
     console.log(`Timer ${timerId}: Reset request initiated...`);
-    stopMovingButton();
+    stopMovingButton(); // <<-- Arrêter le mouvement au clic
     stopOvertimeCheck();
     isOvertime = false;
     resetButton.style.display = 'none';
@@ -222,33 +216,29 @@ resetButton.addEventListener('click', async () => {
         const data = await response.json();
         if (!response.ok || !data.success) {
             console.warn(`Timer ${timerId}: Reset rejected or failed: ${response.status} - ${data.message || 'Unknown reason'}`);
-            await fetchTimeFromServer(); // Resync
+            await fetchTimeFromServer();
         } else {
             console.log(`Timer ${timerId}: Reset successful. New server endTime: ${data.newEndTime}`);
             targetEndTime = data.newEndTime;
-            updateLocalTimerDisplay(); // Update display immediately
+            updateLocalTimerDisplay();
         }
     } catch (error) {
         console.error(`Timer ${timerId}: Error during reset request:`, error);
-        await fetchTimeFromServer(); // Resync
+        await fetchTimeFromServer();
     }
 });
 
 // --- Fonctions d'Initialisation et de Message ---
 function initializeTimerFrontend() {
-    if (!timerId) return; // Ne rien faire si pas d'ID
+    if (!timerId) return;
     console.log(`Timer ${timerId}: Initializing Frontend...`);
     if (timerDisplay) timerDisplay.textContent = "Chargement...";
-
-    // Premier fetch immédiat
     fetchTimeFromServer();
-
-    // Démarrer les intervalles (s'ils ne tournent pas déjà)
     if (!pollingIntervalId) {
-        pollingIntervalId = setInterval(fetchTimeFromServer, 15000); // Polling pour resync
+        pollingIntervalId = setInterval(fetchTimeFromServer, 15000);
     }
     if (!intervalId) {
-        intervalId = setInterval(updateLocalTimerDisplay, 1000); // Mise à jour affichage local
+        intervalId = setInterval(updateLocalTimerDisplay, 1000);
     }
 }
 
@@ -264,10 +254,9 @@ function displayWelcomeMessage() {
         messageDisplay.style.textAlign = 'center';
         messageDisplay.style.marginTop = '30px';
     }
-    // Arrêter les intervalles s'ils tournaient (au cas où on navigue vers '/')
     if (intervalId) clearInterval(intervalId); intervalId = null;
     if (pollingIntervalId) clearInterval(pollingIntervalId); pollingIntervalId = null;
-    if (overtimeCheckIntervalId) stopOvertimeCheck(); // Utilise la fonction qui nettoie aussi la classe CSS
+    if (overtimeCheckIntervalId) stopOvertimeCheck();
     if (animationFrameId) stopMovingButton();
 }
 
@@ -277,14 +266,13 @@ function tryPlayMusic() {
         audioPlayer.play().then(() => {
             console.log("La musique a démarré après interaction !");
             musicCanPlay = true;
-            document.body.removeEventListener('click', tryPlayMusic); // Se détacher une fois démarré
+            document.body.removeEventListener('click', tryPlayMusic);
         }).catch(error => {
             console.log("Tentative de lecture auto échouée, attente interaction...", error.name);
         });
     }
 }
-// Écouteur pour le premier clic - Note: { once: true } a été retiré pour permettre le démarrage via le listener, même si play() est appelé ailleurs
-if (audioPlayer) { // Ajouter l'écouteur seulement si l'élément audio existe
+if (audioPlayer) {
     document.body.addEventListener('click', tryPlayMusic);
 }
 
@@ -293,10 +281,10 @@ const pathSegments = window.location.pathname.split('/');
 const potentialId = pathSegments[1];
 
 if (potentialId && validIds.includes(potentialId)) {
-    timerId = potentialId; // Définir l'ID global
+    timerId = potentialId;
     console.log(`Identified Timer ID: ${timerId}`);
     if (messageDisplay) messageDisplay.style.display = 'none';
-    initializeTimerFrontend(); // Appeler la fonction d'initialisation correcte
+    initializeTimerFrontend();
 } else {
-    displayWelcomeMessage(); // Afficher le message si pas d'ID valide
+    displayWelcomeMessage();
 }
