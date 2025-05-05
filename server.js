@@ -8,6 +8,13 @@ const port = process.env.PORT || 3000;
 const NTFY_TOPIC = 'agggggggressif'; // !!! REMPLACEZ PAR VOTRE TOPIC SECRET !!!
 const NTFY_URL = `https://ntfy.sh/${NTFY_TOPIC}`;
 
+const timerSpecificTopics = {
+    // 'timerId': ['topic_specifique_1', 'topic_specifique_2', ...]
+    'soler': ['agggggggressif_soler'],
+    'lefilsduforgeron': ['agggggggressif_manny'],
+    // Les IDs non listés ici n'enverront qu'au topic global.
+};
+
 const knownTimerIds = ['soler', 'lefilsduforgeron', '69']; // Les identifiants des compteurs que nous gérons
 
 // --- Fonction pour obtenir une durée aléatoire en secondes (INCHANGÉE) ---
@@ -23,21 +30,34 @@ const timerStates = {
 
 
 // --- Fonction pour envoyer une notification --- (NOUVEAU)
-async function sendNtfyNotification(message, title = "Alerte Timer") {
-    console.log(`Sending ntfy notification: ${message}`);
+async function sendHttpRequestToNtfy(topic, message, title = "Alerte Timer") {
+    const fullNtfyUrl = `${NTFY_BASE_URL}${topic}`;
+    console.log(`Sending ntfy to ${topic}: ${message}`);
     try {
-        await fetch(NTFY_URL, {
-            method: 'POST', // ou PUT
-            body: message, // Le message est le corps de la requête
-            headers: {
-                'Title': title, // Titre de la notification (optionnel)
-                // 'Priority': 'high', // Priorité (optionnel)
-                // 'Tags': 'stopwatch,alarm_clock', // Emojis comme icônes (optionnel)
-            }
+        await fetch(fullNtfyUrl, { // Utilise l'URL complète avec le topic
+            method: 'POST',
+            body: message,
+            headers: { 'Title': title }
         });
     } catch (error) {
-        console.error("Failed to send ntfy notification:", error);
-        // Gérer l'erreur si nécessaire (ne pas bloquer le reste)
+        console.error(`Failed to send ntfy notification to ${topic}:`, error);
+    }
+}
+
+// --- NOUVEAU : Fonction pour gérer l'envoi multi-topics ---
+async function sendNotificationsForTimer(timerId, message, title) {
+    // 1. Envoyer TOUJOURS au topic global
+    await sendHttpRequestToNtfy(NTFY_GLOBAL_TOPIC, message, title);
+
+    // 2. Vérifier s'il y a des topics spécifiques pour cet ID
+    const specificTopics = timerSpecificTopics[timerId];
+    if (specificTopics && specificTopics.length > 0) {
+        console.log(`Timer ${timerId} also notifying specific topics: ${specificTopics.join(', ')}`);
+        // Envoyer à chaque topic spécifique trouvé dans le mapping
+        // On peut utiliser Promise.all pour les envoyer en parallèle (optionnel)
+        await Promise.all(
+            specificTopics.map(topic => sendHttpRequestToNtfy(topic, message, title))
+        );
     }
 }
 
@@ -88,7 +108,11 @@ app.post('/reset/:timerId', (req, res) => {
         console.log(`Timer '${timerId}' reset successful. New duration: ${Math.floor(newDuration / 60)}m ${newDuration % 60}s. New endTime: ${timerStates[timerId].endTime} (${new Date(timerStates[timerId].endTime * 1000)})`);
 
         // Envoyer la notification ntfy pour le clic ! (Appel ASYNCHRONE)
-        sendNtfyNotification(`Le bouton du Timer ${timerId} a été cliqué !`, "Clic Bouton");
+        sendNotificationsForTimer(
+            timerId,
+            `Le bouton du Timer ${timerId} a été cliqué !`,
+            "Clic Bouton"
+        );
 
         res.json({ success: true, newEndTime: timerStates[timerId].endTime });
 
@@ -111,8 +135,13 @@ setInterval(() => {
 
         // Condition pour l'alerte 3 minutes (180 secondes)
         if (remaining > 0 && remaining <= 180 && !state.threeMinWarningSent) {
-            const message = `Timer ${id}: Moins de 3 minutes restantes ! (${Math.floor(remaining/60)}m${remaining%60}s)`;
-            sendNtfyNotification(message, "Alerte 3 Min");
+            const minutes = Math.floor(remaining/60);
+            const seconds = remaining%60;
+            const message = `Timer ${id}: Moins de 3 minutes restantes ! (${minutes}m${seconds}s)`;
+            console.log("Generated 3min message:", message);
+
+            // APPEL MODIFIÉ : Utiliser la nouvelle fonction
+            sendNotificationsForTimer(id, message, "Alerte 3 Min");
             state.threeMinWarningSent = true; // Marquer comme envoyé pour ce cycle
         }
 
