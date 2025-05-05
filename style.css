@@ -1,0 +1,12 @@
+#resetButton.active {
+    background-color: green;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}
+
+#timer {
+    font-size: 2em;
+    margin-bottom: 20px;
+}

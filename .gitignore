@@ -1,0 +1,12 @@
+# Fichiers système et IDE
+.idea/
+*.iml
+.DS_Store
+
+# Dépendances Node.js
+node_modules/
+
+# Fichiers de log, build temporaires etc. (optionnel mais bonne pratique)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
