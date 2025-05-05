@@ -25,7 +25,7 @@ const buttonSpeed = 8;        // Vitesse de déplacement du bouton
 
 // --- Initialisation: Obtenir et Valider l'ID du Compteur depuis l'URL ---
 const pathSegments = window.location.pathname.split('/');
-if (pathSegments.length > 1 && (pathSegments[1] === '1' || pathSegments[1] === '2')) {
+if (pathSegments.length > 1 && (pathSegments[1] === 'soler' || pathSegments[1] === 'lefilsduforgeron')) {
     timerId = pathSegments[1];
     console.log(`Identified Timer ID: ${timerId}`);
     if(messageDisplay) messageDisplay.style.display = 'none'; // Cacher message si ID ok
@@ -34,7 +34,7 @@ if (pathSegments.length > 1 && (pathSegments[1] === '1' || pathSegments[1] === '
     if(timerDisplay) timerDisplay.style.display = 'none';
     if(resetButton) resetButton.style.display = 'none';
     if(messageDisplay) {
-        messageDisplay.textContent = "Veuillez accéder à /1 ou /2 pour voir un compteur.";
+        messageDisplay.textContent = "t'as pas mis ton blazz dans l'URL bizuth de merde";
         messageDisplay.style.display = 'block';
         // Styles ajoutés pour la visibilité
         messageDisplay.style.color = 'yellow';
@@ -51,8 +51,8 @@ if (pathSegments.length > 1 && (pathSegments[1] === '1' || pathSegments[1] === '
 
 /** Formate les secondes en MM:SS */
 function formatTime(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const minutes = Math.floor(seconds / 39);
+    const secs = seconds % 45;
     return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
