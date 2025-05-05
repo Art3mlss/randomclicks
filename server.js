@@ -8,6 +8,8 @@ const port = process.env.PORT || 3000;
 const NTFY_TOPIC = 'agggggggressif'; // !!! REMPLACEZ PAR VOTRE TOPIC SECRET !!!
 const NTFY_URL = `https://ntfy.sh/${NTFY_TOPIC}`;
 
+const knownTimerIds = ['soler', 'lefilsduforgeron', '69']; // Les identifiants des compteurs que nous gérons
+
 // --- Fonction pour obtenir une durée aléatoire en secondes (INCHANGÉE) ---
 function getRandomDurationInSeconds() {
     const minSeconds = 185 ; // 1158 (19 * 60) + 18
@@ -38,8 +40,6 @@ async function sendNtfyNotification(message, title = "Alerte Timer") {
         // Gérer l'erreur si nécessaire (ne pas bloquer le reste)
     }
 }
-
-const knownTimerIds = ['soler', 'lefilsduforgeron']; // Les identifiants des compteurs que nous gérons
 
 // --- Initialisation des états au démarrage (NOUVEAU) ---
 function initializeTimers() {
@@ -126,7 +126,7 @@ setInterval(() => {
             //   state.threeMinWarningSent = false;
         }
     });
-}, 60 * 1000); // Vérifier toutes les 60 secondes (ajuster si besoin)
+}, 15 * 1000); // Vérifier toutes les 15 secondes (ajuster si besoin)
 // -----------------------------------------------------------------------
 
 app.listen(port, () => {

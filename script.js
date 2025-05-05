@@ -23,12 +23,17 @@ let buttonX, buttonY;         // Position X, Y du bouton
 let buttonVX, buttonVY;         // Vitesse X, Y du bouton
 const buttonSpeed = 8;        // Vitesse de déplacement du bouton
 
+const validIds = ['soler', 'lefilsduforgeron', '69'];
+
 // --- Initialisation: Obtenir et Valider l'ID du Compteur depuis l'URL ---
 const pathSegments = window.location.pathname.split('/');
-if (pathSegments.length > 1 && (pathSegments[1] === 'soler' || pathSegments[1] === 'lefilsduforgeron')) {
-    timerId = pathSegments[1];
+const potentialId = pathSegments[1];
+
+if (potentialId && validIds.includes(potentialId)) { // Vérifie si l'ID est dans la liste valide
+    timerId = potentialId;
     console.log(`Identified Timer ID: ${timerId}`);
     if(messageDisplay) messageDisplay.style.display = 'none'; // Cacher message si ID ok
+    initializeTimerFrontend();
 } else {
     console.log("No valid Timer ID found in URL path. Timer functionality disabled.");
     if(timerDisplay) timerDisplay.style.display = 'none';
