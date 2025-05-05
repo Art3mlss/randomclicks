@@ -281,3 +281,29 @@ if (timerId) {
     // Ce cas est géré au début du script (affichage message, etc.)
     console.log("Script initialised without a valid timer ID.");
 }
+
+// --- Gestion de la musique de fond ---
+const audioPlayer = document.getElementById('background-audio');
+let musicCanPlay = false; // Pour savoir si on a déjà essayé de jouer sur interaction
+
+function tryPlayMusic() {
+    if (audioPlayer && !musicCanPlay) { // N'essaie qu'une fois de lancer via interaction
+        // Tenter de jouer le son. Retourne une Promesse.
+        audioPlayer.play().then(() => {
+            console.log("La musique a démarré après interaction !");
+            musicCanPlay = true; // Succès, ne plus essayer
+        }).catch(error => {
+            // Échoue souvent au chargement initial à cause de l'autoplay bloqué
+            console.log("Tentative de lecture auto échouée (normal), en attente d'interaction...", error.name);
+            // L'événement click listener ci-dessous gérera le démarrage
+        });
+    } else if (audioPlayer && musicCanPlay) {
+        // Si la musique peut jouer (après 1ere interaction) mais s'est arrêtée, on peut la relancer
+        if (audioPlayer.paused) {
+            audioPlayer.play().catch(e => console.error("Erreur en relançant la musique:", e));
+        }
+    }
+}
+
+// Écouteur pour le premier clic n'importe où sur la page
+document.body.addEventListener('click', tryPlayMusic, { once: true });
