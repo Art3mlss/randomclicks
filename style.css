@@ -1,102 +1,104 @@
-/* style.css (version améliorée) */
+/* style.css (Avec bouton rouge + flash synchronisé) */
 
 body {
-    background-color: #1e1e1e; /* Fond très sombre */
-    color: #f0f0f0; /* Texte principal clair */
-    font-family: Arial, sans-serif; /* Police simple et lisible */
-    margin: 0; /* Enlève les marges par défaut du navigateur */
-    padding: 20px; /* Un peu d'espace sur les bords */
-
-    /* Utilisation de Flexbox pour centrer le contenu facilement */
+    background-color: #1e1e1e;
+    color: #f0f0f0;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
     display: flex;
-    flex-direction: column; /* Éléments les uns sous les autres */
-    align-items: center; /* Centrage horizontal */
-    justify-content: center; /* Centrage vertical */
-    min-height: 95vh; /* Assure que le body prend au moins la hauteur de l'écran */
-    text-align: center; /* Centre aussi le texte DANS les éléments enfants */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 95vh;
+    text-align: center;
+    /* Important pour que position:fixed du bouton soit relatif à la fenêtre */
+    overflow: hidden; /* Empêche les barres de scroll si le bouton touche juste le bord */
 }
 
-/* NOTE: La règle h1 est toujours présente mais l'élément a été supprimé du HTML */
-/* Vous pouvez la supprimer si vous voulez nettoyer le CSS */
+/* Règle h1 non utilisée, peut être supprimée */
 h1 {
-    color: #e0e0e0; /* Titre légèrement moins blanc que le texte */
-    margin-bottom: 30px; /* Espace sous le titre */
+    color: #e0e0e0;
+    margin-bottom: 30px;
 }
 
 #timer {
-    font-size: 4em; /* Taille du compteur augmentée */
-    font-weight: bold; /* Texte en gras */
-    margin-bottom: 30px; /* Espace sous le compteur */
-    color: #61dafb; /* Couleur un peu "tech" pour le compteur (bleu clair) */
-    /* Le centrage est géré par le body (align-items) */
+    font-size: 4em;
+    font-weight: bold;
+    margin-bottom: 30px;
+    color: #61dafb;
 }
 
 #resetButton {
-    /* Style de base quand caché ou inactif (sera rendu visible par JS) */
-    background-color: #444; /* Bouton gris foncé */
-    color: #ccc; /* Texte du bouton gris clair */
+    background-color: #444;
+    color: #ccc;
     border : 1px solid #555;
-    padding: 5px 10px; /* Bouton plus petit */
-    font-size: 0.8em;  /* Texte plus petit */
-    border-radius: 5px; /* Coins arrondis */
-    position: fixed; /* Position fixe pour le déplacement JS */
+    padding: 5px 10px;
+    font-size: 0.8em;
+    border-radius: 5px;
+    position: fixed; /* Nécessaire pour le mouvement JS */
     cursor: pointer;
-    display: none; /* Caché par défaut, JS le montre */
-    transition: background-color 0.2s ease-in-out, transform 0.1s ease; /* Effet de transition doux */
+    display: none; /* Caché par défaut */
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+    /* Ajouter z-index pour être sûr qu'il soit au-dessus du fond */
+    z-index: 10;
 }
 
+/* --- MODIFICATION 1 --- */
+/* Style quand le bouton est actif (MAINTENANT ROUGE) */
 #resetButton.active {
-    /* Style quand le bouton est actif (vert) */
-    background-color: #28a745; /* Vert vif */
-    border-color: #1e7e34;
-    color: white; /* Texte blanc */
+    background-color: red; /* CHANGÉ de vert à rouge */
+    border-color: darkred; /* Bordure rouge foncée */
+    color: white;
 }
+/* --------------------- */
 
-/* Effet au survol */
+/* Effet au survol (inchangé) */
 #resetButton:hover {
-    background-color: #555; /* Légèrement plus clair au survol (si inactif) */
+    background-color: #555;
 }
 
 #resetButton.active:hover {
-    background-color: #218838; /* Vert un peu plus foncé au survol (si actif) */
+    /* Légère variation du rouge au survol */
+    background-color: #cc0000;
+    border-color: #990000;
 }
 
-/* Petit effet au clic */
+/* Petit effet au clic (inchangé) */
 #resetButton:active {
-    transform: scale(0.98); /* Réduit légèrement la taille au clic */
+    transform: scale(0.98);
 }
 
-/* --- Animation de Clignotement (MODIFIÉE) --- */
+/* --- Animation de Clignotement (INCHANGÉE) --- */
+/* Utilise maintenant rouge/blanc, fréquence rapide */
 @keyframes redFlash {
     0%, 49% { /* Phase Rouge */
         background-color: red;
         color: white; /* Texte blanc sur fond rouge */
     }
     50%, 100% { /* Phase Blanche */
-        background-color: white; /* CHANGÉ: Fond blanc */
-        color: black; /* CHANGÉ: Texte noir sur fond blanc */
+        background-color: white;
+        color: black; /* Texte noir sur fond blanc */
     }
 }
 
-/* --- Application de l'Animation (MODIFIÉE) --- */
+/* --- Application de l'Animation au Body (INCHANGÉE) --- */
 body.is-flashing {
-    /* Appliquer l'animation avec une durée très courte pour haute fréquence */
-    animation: redFlash 0.15s infinite; /* CHANGÉ: Durée réduite à 0.15s (très rapide) */
+    /* Fréquence rapide */
+    animation: redFlash 0.15s infinite;
 }
 
-/* --- Styles Optionnels Pendant le Flash (AJUSTÉS) --- */
-/* Pendant le flash, la couleur du texte du body change (blanc/noir). */
-/* Les éléments #timer et #resetButton hériteront de ces couleurs. */
-/* Si un élément spécifique devient illisible (ex: le bleu du timer sur fond blanc), */
-/* vous pouvez décommenter et ajuster une règle comme celle-ci : */
-/*
-body.is-flashing #timer {
-     color: navy !important; // Force une couleur spécifique si besoin
-}
+/* --- MODIFICATION 2 --- */
+/* Faire clignoter le bouton EN MÊME TEMPS que le body */
 body.is-flashing #resetButton.active {
-     // Le bouton vert pourrait nécessiter un ajustement de couleur de texte
-     // pendant la phase blanche s'il devient illisible
-     // color: black !important; // Exemple
+    /* Appliquer EXACTEMENT la même animation que le body */
+    animation: redFlash 0.15s infinite;
+    /* Important: Retirer les styles de fond/couleur/bordure spécifiques */
+    /* pour laisser l'animation prendre le contrôle total */
+    background-color: transparent; /* Laisser l'animation gérer */
+    color: inherit; /* Laisser l'animation gérer via le body */
+    border-color: transparent; /* Laisser l'animation gérer ou masquer */
+    /* La couleur du texte du bouton va maintenant alterner blanc/noir */
+    /* comme le texte par défaut du body pendant le flash. */
 }
-*/
-/* NOTE : La dernière accolade '}' seule à la fin de votre fichier original a été supprimée car elle semblait superflue. */
+/* --------------------- */
