@@ -15,7 +15,7 @@ function getRandomDurationInSeconds() {
 const timerStates = {
     // 'timerId': { endTime: timestamp, currentDuration: seconds }
 };
-const knownTimerIds = ['1', '2']; // Les identifiants des compteurs que nous gérons
+const knownTimerIds = ['soler', 'lefilsduforgeron']; // Les identifiants des compteurs que nous gérons
 
 // --- Initialisation des états au démarrage (NOUVEAU) ---
 function initializeTimers() {
