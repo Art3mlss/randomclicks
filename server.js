@@ -1,4 +1,4 @@
-// server.js (Nouvelle approche simplifiée pour multi-topic)
+// server.js (Version avec UN SEUL canal de notification global)
 
 // --- Imports ---
 const express = require('express');
@@ -10,23 +10,13 @@ const fetch = require('node-fetch');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// --- Configuration ntfy.sh ---
+// --- Configuration ntfy.sh (UN SEUL TOPIC) ---
+const NTFY_TOPIC = 'agggggggressif'; // <-- Le seul topic utilisé
 const NTFY_BASE_URL = 'https://ntfy.sh/';
-// ------------------------------
-
-// --- NOUVEAU: Définition complète des topics pour chaque Timer ID ---
-// C'est le point central de configuration maintenant.
-// Chaque ID liste TOUS les topics auxquels il doit envoyer.
-const timerNotificationTopics = {
-    // 'timerId': ['topic_1', 'topic_2', ...]
-    'soler': ['agggggggressif', 'agggggggressif_soler'],
-    'lefilsduforgeron': ['agggggggressif', 'agggggggressif_manny'],
-    '69': ['agggggggressif', 'agggggggressif_1', 'agggggggressif_2', 'agggggggressif_3']
-    // Si un timerId de knownTimerIds n'est pas listé ici, il n'enverra AUCUNE notification.
-};
-// --------------------------------------------------------------------
+// --------------------------------------------
 
 // --- Liste des Timers Connus ---
+// (Votre configuration actuelle)
 const knownTimerIds = ['soler', 'lefilsduforgeron', '69'];
 // -----------------------------
 
@@ -40,7 +30,7 @@ const timerStates = {
 
 /** Retourne une durée aléatoire en secondes */
 function getRandomDurationInSeconds() {
-    // Vos valeurs actuelles
+    // (Vos valeurs actuelles pour la durée)
     const minSeconds = 185 ;
     const maxSeconds = 200 ;
     return Math.floor(Math.random() * (maxSeconds - minSeconds + 1)) + minSeconds;
@@ -54,43 +44,26 @@ function initializeTimers() {
         timerStates[id] = {
             currentDuration: duration,
             endTime: now + duration,
-            threeMinWarningSent: false
+            threeMinWarningSent: false // Flag pour l'alerte 3min
         };
         console.log(`Initialized timer '${id}'. Duration: ${Math.floor(duration / 60)}m ${duration % 60}s. EndTime: ${new Date(timerStates[id].endTime * 1000)}`);
     });
 }
 
-/** Fonction d'envoi simplifiée pour tous les topics d'un timer ID */
-// Remplace les deux fonctions précédentes (sendHttpRequestToNtfy et sendNotificationsForTimer)
-async function sendNtfyNotificationsForTimer(timerId, message, title = "Alerte Timer") {
-    // 1. Trouver la liste des topics pour cet ID dans notre map de configuration
-    const topicsToSendTo = timerNotificationTopics[timerId];
-
-    // 2. Si aucun topic n'est défini pour cet ID, ne rien faire
-    if (!topicsToSendTo || topicsToSendTo.length === 0) {
-        console.log(`Timer ${timerId}: No notification topics configured.`);
-        return; // Sortir de la fonction
+/** Fonction d'envoi de notification (vers le topic global unique) */
+// C'est la version simple qui envoie tout au même endroit
+async function sendNtfyNotification(message, title = "Alerte Timer") {
+    const fullNtfyUrl = `${NTFY_BASE_URL}${NTFY_TOPIC}`; // Utilise toujours NTFY_TOPIC
+    console.log(`Sending ntfy notification: ${message}`);
+    try {
+        await fetch(fullNtfyUrl, { // Utilise le fetch importé
+            method: 'POST',
+            body: message,
+            headers: { 'Title': title }
+        });
+    } catch (error) {
+        console.error(`Failed to send ntfy notification to ${NTFY_TOPIC}:`, error);
     }
-
-    // 3. Envoyer une requête à chaque topic défini, l'une après l'autre (séquentiel)
-    console.log(`Timer ${timerId}: Notifying topics sequentially: ${topicsToSendTo.join(', ')}`);
-    for (const topic of topicsToSendTo) {
-        const fullNtfyUrl = `${NTFY_BASE_URL}${topic}`;
-        console.log(`  -> Sending to ${topic}...`);
-        try {
-            // Utilise le 'fetch' importé en haut du fichier
-            await fetch(fullNtfyUrl, {
-                method: 'POST',
-                body: message,
-                headers: { 'Title': title }
-            });
-            // console.log(`      Sent OK to ${topic}`); // Décommenter pour plus de logs
-        } catch (error) {
-            // Log l'erreur mais continue avec le topic suivant
-            console.error(`  -> Failed to send ntfy notification to ${topic}:`, error);
-        }
-    }
-    console.log(`Timer ${timerId}: Finished sending notifications.`);
 }
 // -----------------------------------------------------------------
 
@@ -98,13 +71,13 @@ async function sendNtfyNotificationsForTimer(timerId, message, title = "Alerte T
 app.use(cors());
 // ------------------
 
-// --- Initialisation des Timers au Démarrage ---
+// --- Initialisation des Timers ---
 initializeTimers();
-// --------------------------------------------
+// -------------------------------
 
 // --- Routes API ---
 
-// Obtenir l'heure de fin (inchangé)
+// Obtenir l'heure de fin (Logique inchangée)
 app.get('/time/:timerId', (req, res) => {
     const timerId = req.params.timerId;
     console.log(`GET /time/${timerId} request received.`);
@@ -116,8 +89,8 @@ app.get('/time/:timerId', (req, res) => {
     }
 });
 
-// Réinitialiser un timer (MODIFIÉ pour utiliser la nouvelle fonction d'envoi)
-app.post('/reset/:timerId', async (req, res) => {
+// Réinitialiser un timer (Utilise l'appel de notification simple)
+app.post('/reset/:timerId', async (req, res) => { // async peut être retiré si sendNtfyNotification n'est plus attendu
     const timerId = req.params.timerId;
     const now = Math.floor(Date.now() / 1000);
     console.log(`POST /reset/${timerId} request received. Current time: ${now}`);
@@ -126,16 +99,15 @@ app.post('/reset/:timerId', async (req, res) => {
         const newDuration = getRandomDurationInSeconds();
         timerStates[timerId].currentDuration = newDuration;
         timerStates[timerId].endTime = now + newDuration;
-        timerStates[timerId].threeMinWarningSent = false;
+        timerStates[timerId].threeMinWarningSent = false; // Réinitialiser le flag
 
         console.log(`Timer '${timerId}' reset successful...`);
 
-        // Envoyer la notification pour le clic (utilise la NOUVELLE fonction simplifiée)
-        sendNtfyNotificationsForTimer( // Note: le nom a changé
-            timerId,
+        // Envoyer la notification pour le clic (APPEL SIMPLE)
+        sendNtfyNotification( // Appel direct à la fonction simple
             `Le bouton du Timer ${timerId} a été cliqué !`,
             "Clic Bouton"
-        ); // On n'attend pas la fin ici (fire and forget)
+        ); // Pas besoin d'attendre avec await ici
 
         res.json({ success: true, newEndTime: timerStates[timerId].endTime });
 
@@ -146,7 +118,7 @@ app.post('/reset/:timerId', async (req, res) => {
 });
 // ------------------
 
-// --- Tâche de Fond : Vérification Alerte 3 Minutes (MODIFIÉE pour utiliser la nouvelle fonction d'envoi) ---
+// --- Tâche de Fond : Vérification Alerte 3 Minutes (Utilise l'appel de notification simple) ---
 setInterval(() => {
     const now = Math.floor(Date.now() / 1000);
     Object.keys(timerStates).forEach(id => {
@@ -155,16 +127,17 @@ setInterval(() => {
 
         const remaining = state.endTime - now;
 
+        // Condition pour l'alerte 3 minutes (180 secondes)
         if (remaining > 0 && remaining <= 180 && !state.threeMinWarningSent) {
             const minutes = Math.floor(remaining/60);
             const seconds = remaining % 60;
             const message = `Timer ${id}: Moins de 3 minutes restantes ! (${minutes}m${seconds}s)`;
             console.log("Generated 3min message:", message);
 
-            // Envoyer la notification (utilise la NOUVELLE fonction simplifiée)
-            sendNtfyNotificationsForTimer(id, message, "Alerte 3 Min"); // Note: le nom a changé
+            // Envoyer la notification (APPEL SIMPLE)
+            sendNtfyNotification(message, "Alerte 3 Min"); // Appel direct
 
-            state.threeMinWarningSent = true;
+            state.threeMinWarningSent = true; // Marquer comme envoyé pour ce cycle
         }
     });
 }, 15 * 1000); // Vérifier toutes les 15 secondes
