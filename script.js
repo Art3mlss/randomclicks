@@ -4,7 +4,7 @@ const resetButton = document.getElementById('resetButton');
 
 // !!! IMPORTANT : Mettez ici l'URL où votre serveur backend sera accessible !!!
 // Par exemple: 'https://votre-app-timer.onrender.com' ou 'http://localhost:3000' si vous testez localement
-const backendUrl = 'URL_DE_VOTRE_SERVEUR_BACKEND';
+const backendUrl = 'https://randomclicks.onrender.com';
 
 let intervalId = null;
 let targetEndTime = 0; // Stockera l'heure de fin reçue du serveur
