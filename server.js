@@ -6,8 +6,10 @@ const port = process.env.PORT || 3000;
 
 // --- Fonction pour obtenir une durée aléatoire en secondes ---
 function getRandomDurationInSeconds() {
-    const minSeconds = (19 * 60) + 18; // 1158
-    const maxSeconds = (39 * 60) + 45; // 2385
+    //const minSeconds = (19 * 60) + 18; // 1158
+    //const maxSeconds = (39 * 60) + 45; // 2385
+    const minSeconds = (1 * 60) - 18; // 1158
+    const maxSeconds = (1 * 60) + 45; // 2385
     // Formule pour obtenir un entier aléatoire entre min et max (inclus)
     return Math.floor(Math.random() * (maxSeconds - minSeconds + 1)) + minSeconds;
 }
