@@ -51,8 +51,8 @@ if (pathSegments.length > 1 && (pathSegments[1] === 'soler' || pathSegments[1] =
 
 /** Formate les secondes en MM:SS */
 function formatTime(seconds) {
-    const minutes = Math.floor(seconds / 39);
-    const secs = seconds % 45;
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
     return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
