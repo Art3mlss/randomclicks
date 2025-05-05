@@ -9,6 +9,7 @@ const messageDisplay = document.getElementById('message'); // Pour afficher les 
 // !!! IMPORTANT : Assurez-vous que cette URL est correcte !!!
 const backendUrl = 'https://randomclicks.onrender.com'; // Votre URL Render backend
 
+
 // --- Variables d'état Globales ---
 let timerId = null;           // ID du compteur actuel ('1', '2', ou null)
 let intervalId = null;        // ID pour setInterval (mise à jour affichage)
