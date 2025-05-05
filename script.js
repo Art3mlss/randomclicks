@@ -37,11 +37,10 @@ function formatTime(seconds) {
     return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-// --- Fonctions de Mouvement du Bouton ---
 function startMovingButton() {
-    if (animationFrameId || !timerId) return;
+    if (animationFrameId || !timerId) return; // Déjà en mouvement ou pas de timer actif
     const button = resetButton;
-    button.style.position = 'fixed';
+    button.style.position = 'fixed'; // Assurer la position fixe
     const viewWidth = window.innerWidth;
     const viewHeight = window.innerHeight;
     const btnWidth = button.offsetWidth || 50;
@@ -53,8 +52,11 @@ function startMovingButton() {
     buttonVY = Math.sin(angle) * buttonSpeed;
     if (Math.abs(buttonVX) < 1) buttonVX = Math.sign(buttonVX || 1) * buttonSpeed * 0.7;
     if (Math.abs(buttonVY) < 1) buttonVY = Math.sign(buttonVY || 1) * buttonSpeed * 0.7;
+
     console.log(`Timer ${timerId}: Starting smooth move...`);
-    updateButtonPosition(); // Lance la boucle
+
+    // CORRECTION: Démarrer la boucle d'animation correctement
+    animationFrameId = requestAnimationFrame(updateButtonPosition);
 }
 
 function stopMovingButton() {
