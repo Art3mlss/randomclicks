@@ -10,6 +10,7 @@ function getRandomDurationInSeconds() {
     //const maxSeconds = (39 * 60) + 45; // 2385
     const minSeconds = (1 * 60) - 18; // 1158
     const maxSeconds = (1 * 60) + 45; // 2385
+
     // Formule pour obtenir un entier aléatoire entre min et max (inclus)
     return Math.floor(Math.random() * (maxSeconds - minSeconds + 1)) + minSeconds;
 }
