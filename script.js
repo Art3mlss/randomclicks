@@ -24,8 +24,8 @@ let overtimeCheckIntervalId = null; // Pour check > 30s overtime
 // --- Variables pour l'Animation du Bouton ---
 let animationFrameId = null;  // ID pour requestAnimationFrame
 let buttonX, buttonY;         // Position X, Y du bouton
-let buttonVX, buttonVY;         // Vitesse X, Y du bouton
-const buttonSpeed = 8;        // Vitesse de déplacement du bouton
+let buttonVX, buttonVY;       // Vitesse X, Y du bouton
+const buttonSpeed = 5;        // Vitesse de déplacement du bouton
 
 // --- Variable pour la Musique ---
 let musicCanPlay = false;
