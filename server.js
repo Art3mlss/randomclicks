@@ -10,8 +10,8 @@ const NTFY_URL = `https://ntfy.sh/${NTFY_TOPIC}`;
 
 // --- Fonction pour obtenir une durée aléatoire en secondes (INCHANGÉE) ---
 function getRandomDurationInSeconds() {
-    const minSeconds = (19 * 60) + 18; // 1158 (19 * 60) + 18
-    const maxSeconds = (39 * 60) + 45; // 2385
+    const minSeconds = 185 ; // 1158 (19 * 60) + 18
+    const maxSeconds = 200 ; // 2385 (39 * 60) + 45
     return Math.floor(Math.random() * (maxSeconds - minSeconds + 1)) + minSeconds;
 }
 
