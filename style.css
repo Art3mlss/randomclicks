@@ -33,10 +33,11 @@ h1 {
     /* Style de base quand caché ou inactif (sera rendu visible par JS) */
     background-color: #444; /* Bouton gris foncé */
     color: #ccc; /* Texte du bouton gris clair */
-    border: 1px solid #666;
-    padding: 15px 30px; /* Bouton plus grand */
-    font-size: 1.1em;
+    border : 1px solid #555;
+    padding: 5px 10px;
+    font-size: 0.8em;
     border-radius: 5px; /* Coins arrondis */
+    position: fixed;
     cursor: pointer;
     display: none; /* Caché par défaut, JS le montre */
     transition: background-color 0.2s ease-in-out, transform 0.1s ease; /* Effet de transition doux */
@@ -61,4 +62,32 @@ h1 {
 /* Petit effet au clic */
 #resetButton:active {
     transform: scale(0.98); /* Réduit légèrement la taille au clic */
+}
+
+@keyframes redFlash {
+    0%, 49% {
+        background-color: red; /* Rouge vif */
+        color: white; /* Texte blanc pour contraster */
+    }
+    50%, 100% {
+        /* Retour à la couleur de fond normale du thème sombre */
+        background-color: #1e1e1e;
+        color: #f0f0f0; /* Couleur de texte normale */
+    }
+}
+
+body.is-flashing {
+    animation: redFlash 0.4s infinite; /* Vitesse du clignotement (0.4s) */
+}
+
+/* Optionnel: S'assurer que le timer reste visible pendant le flash rouge */
+body.is-flashing #timer {
+    color: white !important; /* Forcer la couleur du timer en blanc */
+}
+/* Optionnel: S'assurer que le bouton reste visible pendant le flash */
+body.is-flashing #resetButton {
+    /* Garder le style 'active' même pendant le flash */
+    background-color: #28a745 !important;
+    color: white !important;
+    border-color: #1e7e34 !important;
 }
