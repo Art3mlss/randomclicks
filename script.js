@@ -20,36 +20,106 @@ function formatTime(seconds) {
     return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
+// script.js (modifications pour mouvement fluide)
+
+// ... (variables existantes : timerDisplay, resetButton, backendUrl, intervalId, targetEndTime)
+// ... (variables : isOvertime, overtimeStart, overtimeCheckIntervalId)
+
+// --- Variables pour le Mouvement du Bouton (MODIFIÉES) ---
+let animationFrameId = null; // Remplace buttonMoveIntervalId
+let buttonX, buttonY;        // Position actuelle
+let buttonVX, buttonVY;        // Vélocité actuelle (pixels par frame)
+const buttonSpeed = 8;       // Vitesse de base du mouvement (pixels par frame, à ajuster)
+// -------------------------------------------------------
+
+// ... (fonction formatTime) ...
+
+// --- Fonction pour démarrer le mouvement fluide (REMPLACÉE) ---
 function startMovingButton() {
-    if (buttonMoveIntervalId) return; // Déjà en mouvement
+    if (animationFrameId) return; // Déjà en mouvement
 
     const button = resetButton;
-    button.style.position = 'fixed'; // Assurer la position fixe
+    button.style.position = 'fixed'; // Indispensable
 
-    buttonMoveIntervalId = setInterval(() => {
-        // Obtenir les dimensions de la fenêtre et du bouton
+    // --- Initialisation de la position et de la vitesse ---
+    const viewWidth = window.innerWidth;
+    const viewHeight = window.innerHeight;
+    const btnWidth = button.offsetWidth || 50; // Utiliser une valeur par défaut si offsetWidth est 0 au début
+    const btnHeight = button.offsetHeight || 20;
+
+    // Position initiale (ex: centre, ou aléatoire mais pas trop près des bords)
+    buttonX = viewWidth / 2 - btnWidth / 2;
+    buttonY = viewHeight / 2 - btnHeight / 2;
+
+    // Vitesse initiale aléatoire mais avec une magnitude constante
+    let angle = Math.random() * 2 * Math.PI; // Angle aléatoire en radians
+    buttonVX = Math.cos(angle) * buttonSpeed;
+    buttonVY = Math.sin(angle) * buttonSpeed;
+    // S'assurer qu'on ne démarre pas avec une vitesse quasi nulle sur un axe
+    if (Math.abs(buttonVX) < 1) buttonVX = Math.sign(buttonVX || 1) * buttonSpeed * 0.7;
+    if (Math.abs(buttonVY) < 1) buttonVY = Math.sign(buttonVY || 1) * buttonSpeed * 0.7;
+    // -----------------------------------------------------
+
+    console.log("Starting smooth move...");
+
+    // --- Boucle d'animation principale ---
+    function updateButtonPosition() {
         const viewWidth = window.innerWidth;
         const viewHeight = window.innerHeight;
         const btnWidth = button.offsetWidth;
         const btnHeight = button.offsetHeight;
 
-        // Calculer des positions aléatoires, en s'assurant que le bouton reste visible
-        const newTop = Math.random() * (viewHeight - btnHeight);
-        const newLeft = Math.random() * (viewWidth - btnWidth);
+        // Calculer la prochaine position
+        let nextX = buttonX + buttonVX;
+        let nextY = buttonY + buttonVY;
 
-        button.style.top = `${newTop}px`;
-        button.style.left = `${newLeft}px`;
-    }, 75); // Intervalle très court pour un mouvement rapide (ajuster si besoin)
+        // Détection de collision et rebond
+        // Bord gauche
+        if (nextX <= 0) {
+            nextX = 0; // Clamper à la position 0
+            buttonVX = -buttonVX; // Inverser vitesse X
+        }
+        // Bord droit
+        if (nextX + btnWidth >= viewWidth) {
+            nextX = viewWidth - btnWidth; // Clamper à la position max
+            buttonVX = -buttonVX; // Inverser vitesse X
+        }
+        // Bord haut
+        if (nextY <= 0) {
+            nextY = 0; // Clamper
+            buttonVY = -buttonVY; // Inverser vitesse Y
+        }
+        // Bord bas
+        if (nextY + btnHeight >= viewHeight) {
+            nextY = viewHeight - btnHeight; // Clamper
+            buttonVY = -buttonVY; // Inverser vitesse Y
+        }
+
+        // Mettre à jour la position stockée et le style
+        buttonX = nextX;
+        buttonY = nextY;
+        button.style.left = `${buttonX}px`;
+        button.style.top = `${buttonY}px`;
+
+        // Demander la prochaine frame
+        animationFrameId = requestAnimationFrame(updateButtonPosition);
+    }
+    // -----------------------------------
+
+    // Démarrer la boucle
+    animationFrameId = requestAnimationFrame(updateButtonPosition);
 }
 
+// --- Fonction pour arrêter le mouvement fluide (MODIFIÉE) ---
 function stopMovingButton() {
-    if (buttonMoveIntervalId) {
-        clearInterval(buttonMoveIntervalId);
-        buttonMoveIntervalId = null;
-        // Remettre une position par défaut (optionnel, car il sera caché/stylé par CSS)
-        // resetButton.style.top = '50%'; // Exemple
-        // resetButton.style.left = '50%'; // Exemple
-        // resetButton.style.transform = 'translate(-50%, -50%)'; // Pour centrer si top/left = 50%
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId); // Arrêter la boucle d'animation
+        animationFrameId = null;
+        console.log("Stopping smooth move.");
+        // Optionnel: replacer le bouton au centre ou laisser CSS gérer
+        // resetButton.style.left = '50%';
+        // resetButton.style.top = '50%';
+        // resetButton.style.transform = 'translate(-50%, -50%)';
     }
 }
 
@@ -79,7 +149,6 @@ function stopOvertimeCheck() {
 }
 
 
-// --- Mise à jour de l'affichage principal (MODIFIÉE) ---
 function updateLocalTimerDisplay() {
     const now = Math.floor(Date.now() / 1000);
     const remainingSeconds = targetEndTime - now;
@@ -87,81 +156,61 @@ function updateLocalTimerDisplay() {
     if (remainingSeconds <= 0) {
         // --- Mode Overtime ---
         if (!isOvertime) {
-            // Première fois qu'on entre en overtime
             isOvertime = true;
-            overtimeStart = targetEndTime; // Le moment où le timer a fini
-            // S'assurer que l'intervalle principal tourne toujours pour màj l'overtime
-            if (!intervalId) {
+            overtimeStart = targetEndTime;
+            if (!intervalId) { // S'assurer que l'intervalle tourne pour maj l'overtime
                 intervalId = setInterval(updateLocalTimerDisplay, 1000);
             }
-            // Démarrer les nouvelles fonctionnalités
-            startMovingButton();
+            startMovingButton(); // Démarre le NOUVEAU mouvement fluide
             startOvertimeCheck();
         }
-
         const elapsedOvertime = now - overtimeStart;
-        timerDisplay.textContent = `+${formatTime(elapsedOvertime)}`; // Affichage du temps dépassé
-
-        // Gérer l'affichage du bouton (reste comme avant)
+        timerDisplay.textContent = `+${formatTime(elapsedOvertime)}`;
         resetButton.style.display = 'block';
         resetButton.classList.add('active');
 
     } else {
         // --- Mode Compte à rebours normal ---
         if (isOvertime) {
-            // On sortait du mode overtime (suite à un reset)
             isOvertime = false;
-            stopMovingButton();
-            stopOvertimeCheck(); // Arrête aussi le clignotement
+            stopMovingButton(); // Arrête le NOUVEAU mouvement fluide
+            stopOvertimeCheck();
         }
-
-        timerDisplay.textContent = formatTime(remainingSeconds); // Affichage normal
-
-        // Cacher le bouton et s'assurer que les fonctionnalités overtime sont arrêtées
+        timerDisplay.textContent = formatTime(remainingSeconds);
         resetButton.style.display = 'none';
         resetButton.classList.remove('active');
         stopMovingButton(); // Sécurité
         stopOvertimeCheck(); // Sécurité
-
-        // S'assurer que l'intervalle tourne
-        if (!intervalId) {
+        if (!intervalId) { // S'assurer que l'intervalle tourne
             intervalId = setInterval(updateLocalTimerDisplay, 1000);
         }
     }
 }
 
-// --- Gestion du clic Reset (MODIFIÉE) ---
+
+// --- Gestion du clic Reset (resetButton.addEventListener) ---
+// Cette fonction reste EXACTEMENT LA MÊME que dans la version précédente.
+// Elle appelle stopMovingButton() et stopOvertimeCheck() au début du clic.
 resetButton.addEventListener('click', async () => {
-    // Pas besoin de vérifier l'heure ici, on est forcément en overtime si le bouton est cliquable
     console.log("Reset request initiated by click...");
-
-    // Arrêter immédiatement les effets visuels
-    stopMovingButton();
-    stopOvertimeCheck(); // Arrête clignotement + vérification
-    isOvertime = false; // On sort du mode overtime
-
-    // Cacher le bouton pendant la requête
+    stopMovingButton(); // Arrête le mouvement fluide
+    stopOvertimeCheck();
+    isOvertime = false;
     resetButton.style.display = 'none';
     resetButton.classList.remove('active');
-
     try {
         const response = await fetch(`${backendUrl}/reset`, { method: 'POST' });
         const data = await response.json();
-
         if (!response.ok || !data.success) {
             console.warn(`Reset rejected or failed: ${response.status} - ${data.message || 'Unknown reason'}`);
-            // Essayer de resynchroniser avec le serveur
-            await fetchTimeFromServer(); // Peut-être que qqn d'autre a reset ?
+            await fetchTimeFromServer();
         } else {
             console.log(`Reset successful. New server endTime: ${data.newEndTime}`);
-            targetEndTime = data.newEndTime; // Mettre à jour notre cible
-            // UpdateLocalTimerDisplay sera appelé par le fetch ou le polling,
-            // ou on peut l'appeler manuellement pour réactivité immédiate :
-            updateLocalTimerDisplay();
+            targetEndTime = data.newEndTime;
+            updateLocalTimerDisplay(); // Mettre à jour immédiatement
         }
     } catch (error) {
         console.error("Error during reset request:", error);
-        // En cas d'erreur réseau, essayer de resynchroniser
         await fetchTimeFromServer();
     }
 });
